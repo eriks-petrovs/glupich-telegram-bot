@@ -65,3 +65,11 @@ export function getBotName(): string {
 export function setBotName(name: string): void {
   setConfig("bot_name", name);
 }
+
+export function getTimezone(): string {
+  return getConfig("timezone") || configDefaults.timezone;
+}
+
+export function setTimezone(tz: string): void {
+  setConfig("timezone", tz);
+}

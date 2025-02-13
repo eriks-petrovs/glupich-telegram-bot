@@ -12,6 +12,8 @@ import {
   setSubmitPermission,
   getBotName,
   setBotName,
+  getTimezone,
+  setTimezone,
 } from "../services/configService";
 import { adminOnly } from "../middlewares/adminCheck";
 
@@ -33,6 +35,7 @@ export function registerConfigCommands(bot: Bot) {
         const postingDelay = getPostingDelay();
         const submitPermission = getSubmitPermission();
         const botName = getBotName();
+        const timezone = getTimezone();
         await ctx.reply(
           `Current configuration:\n` +
           `Admin Tags: ${adminTags.join(", ") || "not set"}\n` +
@@ -40,7 +43,8 @@ export function registerConfigCommands(bot: Bot) {
           `Admin Post Threshold: ${adminPostThreshold}\n` +
           `Posting Delay (minutes): ${postingDelay}\n` +
           `Submit Permission: ${submitPermission}\n` +
-          `Bot Name: ${botName}`
+          `Bot Name: ${botName}` +
+          `Timezone: ${timezone}`
         );
       } else if (action === "set") {
         if (args.length < 3) {
@@ -106,8 +110,18 @@ export function registerConfigCommands(bot: Bot) {
             await ctx.reply(`Bot name updated: ${name}`);
             break;
           }
+          case "timezone": {
+            if (values.length < 1) {
+              await ctx.reply("Usage: /config set timezone <IANA timezone name> (e.g., 'UTC', 'America/New_York')");
+              return;
+            }
+            const tz = values.join(" ");
+            setTimezone(tz);
+            await ctx.reply(`Timezone updated: ${tz}. Please ensure you use a valid IANA timezone name (e.g., 'UTC', 'America/New_York').`);
+            break;
+          }
           default:
-            await ctx.reply("Unknown configuration key. Valid keys: admintags, subscribertag, adminpostthreshold, postingdelay, submitpermission, botname");
+            await ctx.reply("Unknown configuration key. Valid keys: admintags, subscribertag, adminpostthreshold, postingdelay, submitpermission, botname, timezone");
         }
       } else {
         await ctx.reply("Unknown action. Use `/config show` or `/config set <key> <value...>`");

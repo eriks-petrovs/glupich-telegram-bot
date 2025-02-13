@@ -12,4 +12,5 @@ export default {
   defaultSubscriberTag: process.env.DEFAULT_SUBSCRIBER_TAG || "",
   defaultSubmitPermission: process.env.DEFAULT_SUBMIT_PERMISSION || "public",
   botName: process.env.BOT_NAME || "Glupich Bot",
+  timezone: process.env.TIMEZONE || "UTC",
 };
