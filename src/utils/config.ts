@@ -13,4 +13,6 @@ export default {
   defaultSubmitPermission: process.env.DEFAULT_SUBMIT_PERMISSION || "public",
   botName: process.env.BOT_NAME || "Glupich Bot",
   timezone: process.env.TIMEZONE || "UTC",
+  postingStart: process.env.POSTING_START || "08:00",  // 24-hour format HH:MM
+  postingEnd: process.env.POSTING_END || "22:00",      // 24-hour format HH:MM
 };

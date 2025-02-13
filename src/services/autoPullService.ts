@@ -1,3 +1,4 @@
+// GlupichBot/src/services/autoPullService.ts
 import { Bot } from "grammy";
 import {
   getAdminTags,
@@ -5,7 +6,10 @@ import {
   getAdminPostThreshold,
   getPostingDelay,
   getAdminPostCount,
-  setAdminPostCount
+  setAdminPostCount,
+  getTimezone,
+  getPostingStart,
+  getPostingEnd,
 } from "../services/configService";
 import { listQueue, removeFromQueue, SubscriberPost } from "../services/queueService";
 import { sendPostToChannel } from "./channelService";
@@ -14,17 +18,69 @@ import { logger } from "../utils/logger";
 let lastChannelPostTime = Date.now();
 let scheduledPullTimer: NodeJS.Timeout | null = null;
 
+// Helper to convert current time in the configured timezone to minutes since midnight.
+function getCurrentTimeInMinutes(timezone: string): number {
+  const nowStr = new Date().toLocaleString("en-US", { timeZone: timezone });
+  const now = new Date(nowStr);
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+function parseTimeToMinutes(timeStr: string): number {
+  const [hours, minutes] = timeStr.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+// Helper to compute the next allowed posting time (Date) based on postingStart in the configured timezone.
+function getNextAllowedPostingTime(timezone: string, postingStart: string): Date {
+  const nowStr = new Date().toLocaleString("en-US", { timeZone: timezone });
+  const nowInTZ = new Date(nowStr);
+  const [startHour, startMinute] = postingStart.split(":").map(Number);
+  let nextAllowed = new Date(nowInTZ);
+  nextAllowed.setHours(startHour, startMinute, 0, 0);
+  if (nextAllowed.getTime() <= nowInTZ.getTime()) {
+    nextAllowed.setDate(nextAllowed.getDate() + 1);
+  }
+  return nextAllowed;
+}
+
 async function attemptAutoPull(bot: Bot): Promise<void> {
   const currentTime = Date.now();
   const delayMs = getPostingDelay() * 60000;
   const threshold = getAdminPostThreshold();
   const adminCount = getAdminPostCount();
-
+  const elapsed = currentTime - lastChannelPostTime;
   logger.debug(
-    `AutoPull Check: adminCount=${adminCount}, threshold=${threshold}, elapsed=${currentTime - lastChannelPostTime}ms, requiredDelay=${delayMs}ms`
+    `AutoPull Check: adminCount=${adminCount}, threshold=${threshold}, elapsed=${elapsed}ms, requiredDelay=${delayMs}ms`
   );
 
-  if (adminCount >= threshold && (currentTime - lastChannelPostTime) >= delayMs) {
+  const timezone = getTimezone();
+  const currentMinutes = getCurrentTimeInMinutes(timezone);
+  const startMinutes = parseTimeToMinutes(getPostingStart());
+  const endMinutes = parseTimeToMinutes(getPostingEnd());
+  let withinWindow = false;
+  if (startMinutes < endMinutes) {
+    withinWindow = currentMinutes >= startMinutes && currentMinutes < endMinutes;
+  } else {
+    withinWindow = currentMinutes >= startMinutes || currentMinutes < endMinutes;
+  }
+  if (!withinWindow) {
+    const nextAllowedTime = getNextAllowedPostingTime(timezone, getPostingStart());
+    const delayUntilAllowed = nextAllowedTime.getTime() - Date.now();
+    logger.info(`AutoPull: Outside posting window. Next allowed posting at ${nextAllowedTime.toLocaleTimeString("en-US", { timeZone: timezone, hour: "2-digit", minute: "2-digit" })}.`);
+    if (scheduledPullTimer) {
+      clearTimeout(scheduledPullTimer);
+      scheduledPullTimer = null;
+    }
+    scheduledPullTimer = setTimeout(() => {
+      scheduledPullTimer = null;
+      attemptAutoPull(bot).catch(err =>
+        logger.error("Scheduled AutoPull error: " + err)
+      );
+    }, delayUntilAllowed);
+    return;
+  }
+
+  if (adminCount >= threshold && elapsed >= delayMs) {
     const queue = listQueue();
     if (queue.length > 0) {
       const post: SubscriberPost = queue[0];
@@ -38,7 +94,6 @@ async function attemptAutoPull(bot: Bot): Promise<void> {
       } catch (err) {
         logger.error("AutoPull: Failed to send post: " + err);
       }
-      // Cancel any scheduled timer once a pull occurs.
       if (scheduledPullTimer) {
         clearTimeout(scheduledPullTimer);
         scheduledPullTimer = null;
@@ -51,9 +106,8 @@ async function attemptAutoPull(bot: Bot): Promise<void> {
       }
     }
   } else {
-    // If admin count is sufficient but the delay condition is not met, schedule a one-shot timer.
     if (adminCount >= threshold) {
-      const remainingDelay = getPostingDelay() * 60000 - (currentTime - lastChannelPostTime);
+      const remainingDelay = delayMs - elapsed;
       if (remainingDelay > 0 && !scheduledPullTimer) {
         logger.debug(`AutoPull: Scheduling pull in ${remainingDelay}ms.`);
         scheduledPullTimer = setTimeout(() => {
@@ -64,7 +118,6 @@ async function attemptAutoPull(bot: Bot): Promise<void> {
         }, remainingDelay);
       }
     } else {
-      // If the admin count is below threshold, cancel any pending timer.
       if (scheduledPullTimer) {
         clearTimeout(scheduledPullTimer);
         scheduledPullTimer = null;
@@ -75,7 +128,6 @@ async function attemptAutoPull(bot: Bot): Promise<void> {
 }
 
 export function registerAutoPull(bot: Bot): void {
-  // Initial check on bot load.
   attemptAutoPull(bot).catch(err => logger.error("Initial AutoPull error: " + err));
 
   bot.on("channel_post", async (ctx) => {
@@ -106,6 +158,23 @@ export function getAutoPullStatusDetailed() {
   const postsRemaining = Math.max(0, threshold - adminCount);
   const timeRemainingMs = Math.max(0, delayMs - elapsed);
   const timeRemainingMinutes = Math.ceil(timeRemainingMs / 60000);
+  
+  const timezone = getTimezone();
+  const currentMinutes = getCurrentTimeInMinutes(timezone);
+  const startMinutes = parseTimeToMinutes(getPostingStart());
+  const endMinutes = parseTimeToMinutes(getPostingEnd());
+  let withinWindow = false;
+  if (startMinutes < endMinutes) {
+    withinWindow = currentMinutes >= startMinutes && currentMinutes < endMinutes;
+  } else {
+    withinWindow = currentMinutes >= startMinutes || currentMinutes < endMinutes;
+  }
+  let nextAllowedTime: string | null = null;
+  if (!withinWindow) {
+    const nextAllowed = getNextAllowedPostingTime(timezone, getPostingStart());
+    nextAllowedTime = nextAllowed.toLocaleTimeString("en-US", { timeZone: timezone, hour: "2-digit", minute: "2-digit" });
+  }
+  
   return {
     adminPostCount: adminCount,
     lastChannelPostTime,
@@ -113,6 +182,8 @@ export function getAutoPullStatusDetailed() {
     timeRemainingMs,
     timeRemainingMinutes,
     threshold,
-    delayMinutes: getPostingDelay()
+    delayMinutes: getPostingDelay(),
+    postingWindowOpen: withinWindow,
+    nextAllowedTime,
   };
 }

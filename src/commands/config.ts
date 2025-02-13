@@ -14,6 +14,10 @@ import {
   setBotName,
   getTimezone,
   setTimezone,
+  getPostingStart,
+  getPostingEnd,
+  setPostingStart,
+  setPostingEnd,
 } from "../services/configService";
 import { adminOnly } from "../middlewares/adminCheck";
 
@@ -23,7 +27,7 @@ export function registerConfigCommands(bot: Bot) {
       const args = ctx.message?.text.split(" ").slice(1) || [];
       if (args.length === 0) {
         await ctx.reply(
-          "Usage:\n/config show\n/config set <key> <value...>\nValid keys: admintags, subscribertag, adminpostthreshold, postingdelay, submitpermission, botname"
+          "Usage:\n/config show\n/config set <key> <value...>\nValid keys: admintags, subscribertag, adminpostthreshold, postingdelay, submitpermission, botname, timezone, postingstart, postingend"
         );
         return;
       }
@@ -32,10 +36,12 @@ export function registerConfigCommands(bot: Bot) {
         const adminTags = getAdminTags();
         const subscriberTag = getSubscriberTag(); 
         const adminPostThreshold = getAdminPostThreshold();
-        const postingDelay = getPostingDelay();
+        const postingDelay = getPostingDelay(); 
         const submitPermission = getSubmitPermission();
         const botName = getBotName();
         const timezone = getTimezone();
+        const postingStart = getPostingStart();
+        const postingEnd = getPostingEnd();
         await ctx.reply(
           `Current configuration:\n` +
           `Admin Tags: ${adminTags.join(", ") || "not set"}\n` +
@@ -43,8 +49,10 @@ export function registerConfigCommands(bot: Bot) {
           `Admin Post Threshold: ${adminPostThreshold}\n` +
           `Posting Delay (minutes): ${postingDelay}\n` +
           `Submit Permission: ${submitPermission}\n` +
-          `Bot Name: ${botName}` +
-          `Timezone: ${timezone}`
+          `Bot Name: ${botName}\n` +
+          `Timezone: ${timezone}\n` +
+          `Posting Start: ${postingStart}\n` +
+          `Posting End: ${postingEnd}`
         );
       } else if (action === "set") {
         if (args.length < 3) {
@@ -120,8 +128,28 @@ export function registerConfigCommands(bot: Bot) {
             await ctx.reply(`Timezone updated: ${tz}. Please ensure you use a valid IANA timezone name (e.g., 'UTC', 'America/New_York').`);
             break;
           }
+          case "postingstart": {
+            if (values.length < 1) {
+              await ctx.reply("Usage: /config set postingstart <HH:MM> (24-hour format)");
+              return;
+            }
+            const start = values[0];
+            setPostingStart(start);
+            await ctx.reply(`Posting start updated: ${start}`);
+            break;
+          }
+          case "postingend": {
+            if (values.length < 1) {
+              await ctx.reply("Usage: /config set postingend <HH:MM> (24-hour format)");
+              return;
+            }
+            const end = values[0];
+            setPostingEnd(end);
+            await ctx.reply(`Posting end updated: ${end}`);
+            break;
+          }
           default:
-            await ctx.reply("Unknown configuration key. Valid keys: admintags, subscribertag, adminpostthreshold, postingdelay, submitpermission, botname, timezone");
+            await ctx.reply("Unknown configuration key. Valid keys: admintags, subscribertag, adminpostthreshold, postingdelay, submitpermission, botname, timezone, postingstart, postingend");
         }
       } else {
         await ctx.reply("Unknown action. Use `/config show` or `/config set <key> <value...>`");

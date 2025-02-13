@@ -73,3 +73,19 @@ export function getTimezone(): string {
 export function setTimezone(tz: string): void {
   setConfig("timezone", tz);
 }
+
+export function getPostingStart(): string {
+  return getConfig("posting_start") || configDefaults.postingStart;
+}
+
+export function setPostingStart(time: string): void {
+  setConfig("posting_start", time);
+}
+
+export function getPostingEnd(): string {
+  return getConfig("posting_end") || configDefaults.postingEnd;
+}
+
+export function setPostingEnd(time: string): void {
+  setConfig("posting_end", time);
+}

@@ -18,12 +18,13 @@ export function registerStatusCommand(bot: Bot) {
         message += `Admin Posts: ${status.adminPostCount} / ${status.threshold}\n` +
                    `Need ${postsNeeded} more admin post(s) to trigger auto-pull.`;
       } else {
-        if (status.timeRemainingMs > 0) {
-          const timezone = getTimezone();
+        if (!status.postingWindowOpen) {
+          message += `Currently outside posting hours. Next allowed posting time: ${status.nextAllowedTime} (${getTimezone()}).`;
+        } else if (status.timeRemainingMs > 0) {
           const nextPostTime = new Date(Date.now() + status.timeRemainingMs)
-            .toLocaleTimeString("en-US", { timeZone: timezone });
+            .toLocaleTimeString("en-US", { timeZone: getTimezone() });
           message += `Admin threshold met (${status.adminPostCount} / ${status.threshold}).\n` +
-                     `Waiting for delay: ~${status.timeRemainingMinutes} minute(s) (estimated at ${nextPostTime} in ${timezone}).`;
+                     `Waiting for delay: ~${status.timeRemainingMinutes} minute(s) (estimated at ${nextPostTime}).`;
         } else {
           message += "All conditions are met. The next subscriber post will be published immediately.";
         }
