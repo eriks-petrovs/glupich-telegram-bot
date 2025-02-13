@@ -9,8 +9,10 @@ import { registerConfigCommands } from "./config";
 import { registerStatusCommand } from "./status";
 import { registerLatestCommand } from "./latest";
 import { registerViewIdCommand } from "./viewid";
+import { registerStartCommand } from "./start";
 
 export function registerCommands(bot: Bot) {
+  registerStartCommand(bot);
   registerSubmitHandler(bot);
   registerHelpCommand(bot);
   registerQueueCommand(bot);

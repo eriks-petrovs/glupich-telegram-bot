@@ -9,7 +9,9 @@ import {
   getPostingDelay,
   setPostingDelay,
   getSubmitPermission,
-  setSubmitPermission
+  setSubmitPermission,
+  getBotName,
+  setBotName,
 } from "../services/configService";
 import { adminOnly } from "../middlewares/adminCheck";
 
@@ -19,27 +21,26 @@ export function registerConfigCommands(bot: Bot) {
       const args = ctx.message?.text.split(" ").slice(1) || [];
       if (args.length === 0) {
         await ctx.reply(
-          "Usage:\n" +
-          "/config show\n" +
-          "/config set <key> <value...>\n" +
-          "Valid keys: admintags, subscribertag, adminpostthreshold, postingdelay, submitpermission"
+          "Usage:\n/config show\n/config set <key> <value...>\nValid keys: admintags, subscribertag, adminpostthreshold, postingdelay, submitpermission, botname"
         );
         return;
       }
       const action = args[0].toLowerCase();
       if (action === "show") {
         const adminTags = getAdminTags();
-        const subscriberTag = getSubscriberTag();
+        const subscriberTag = getSubscriberTag(); 
         const adminPostThreshold = getAdminPostThreshold();
         const postingDelay = getPostingDelay();
         const submitPermission = getSubmitPermission();
+        const botName = getBotName();
         await ctx.reply(
           `Current configuration:\n` +
           `Admin Tags: ${adminTags.join(", ") || "not set"}\n` +
           `Subscriber Tag: ${subscriberTag || "not set"}\n` +
           `Admin Post Threshold: ${adminPostThreshold}\n` +
           `Posting Delay (minutes): ${postingDelay}\n` +
-          `Submit Permission: ${submitPermission}`
+          `Submit Permission: ${submitPermission}\n` +
+          `Bot Name: ${botName}`
         );
       } else if (action === "set") {
         if (args.length < 3) {
@@ -95,12 +96,22 @@ export function registerConfigCommands(bot: Bot) {
             await ctx.reply(`Submit permission updated: ${perm}`);
             break;
           }
+          case "botname": {
+            if (values.length < 1) {
+              await ctx.reply("Usage: /config set botname <name>");
+              return;
+            }
+            const name = values.join(" ");
+            setBotName(name);
+            await ctx.reply(`Bot name updated: ${name}`);
+            break;
+          }
           default:
-            await ctx.reply("Unknown configuration key. Valid keys: admintags, subscribertag, adminpostthreshold, postingdelay, submitpermission");
+            await ctx.reply("Unknown configuration key. Valid keys: admintags, subscribertag, adminpostthreshold, postingdelay, submitpermission, botname");
         }
       } else {
         await ctx.reply("Unknown action. Use `/config show` or `/config set <key> <value...>`");
-      }
+      } 
     });
   });
 }

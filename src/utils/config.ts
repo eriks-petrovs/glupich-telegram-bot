@@ -9,5 +9,7 @@ export default {
   defaultAdminTags: process.env.DEFAULT_ADMIN_TAGS
     ? process.env.DEFAULT_ADMIN_TAGS.split(",").map(tag => tag.trim())
     : [],
-  defaultSubscriberTag: process.env.DEFAULT_SUBSCRIBER_TAG || ""
+  defaultSubscriberTag: process.env.DEFAULT_SUBSCRIBER_TAG || "",
+  defaultSubmitPermission: process.env.DEFAULT_SUBMIT_PERMISSION || "public",
+  botName: process.env.BOT_NAME || "Glupich Bot",
 };
