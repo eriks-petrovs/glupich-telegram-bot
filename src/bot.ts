@@ -57,6 +57,7 @@ export async function createBot(): Promise<Bot> {
   await bot.api.setMyCommands([
     { command: "help", description: "Show help message" },
     { command: "submit", description: "Submit your photo(s) for the channel" },
+    { command: "myposts", description: "View your pending submissions" },
     { command: "queue", description: "List the subscriber submission queue" },
     { command: "remove", description: "Remove a submission from the queue" },
     { command: "view", description: "View a submission by its queue position" },
