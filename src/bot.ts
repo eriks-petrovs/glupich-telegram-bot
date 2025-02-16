@@ -65,7 +65,8 @@ export async function createBot(): Promise<Bot> {
     { command: "pull", description: "Pull the first submission from the queue to the channel" },
     { command: "config", description: "Configure bot settings" },
     { command: "status", description: "Display auto-pull status and queue info" },
-    { command: "latest", description: "Display the latest submissions" }
+    { command: "latest", description: "Display the latest submissions" },
+    { command: "setadmincount", description: "Manually set admin post count" }
   ]);
 
   await connectToChannel(bot);

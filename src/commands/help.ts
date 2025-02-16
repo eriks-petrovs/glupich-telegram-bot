@@ -15,6 +15,7 @@ Available commands:
 /config - Configure bot settings
 /status - Display auto-pull status and queue info
 /latest - Display the latest submissions
+/setadmincount - Manually set the admin post count
     `;
     ctx.reply(helpMessage);
   });

@@ -11,6 +11,7 @@ import { registerLatestCommand } from "./latest";
 import { registerViewIdCommand } from "./viewid";
 import { registerStartCommand } from "./start";
 import { registerMyPostsCommand } from "./myposts";
+import { registerSetAdminCountCommand } from "./setadmincount";
 
 export function registerCommands(bot: Bot) {
   registerStartCommand(bot);
@@ -25,4 +26,5 @@ export function registerCommands(bot: Bot) {
   registerLatestCommand(bot);
   registerViewIdCommand(bot);
   registerMyPostsCommand(bot);
+  registerSetAdminCountCommand(bot);
 }
