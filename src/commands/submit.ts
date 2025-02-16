@@ -1,7 +1,9 @@
 import { Bot } from "grammy";
+import { attemptAutoPull } from "../services/autoPullService";
 import { addToQueue, addMediaGroupMessage } from "../services/queueService";
 import { getSubscriberTag, getSubmitPermission } from "../services/configService";
 import { adminOnly } from "../middlewares/adminCheck";
+import { logger } from "../utils/logger";
 
 export function registerSubmitHandler(bot: Bot) {
   bot.on("message", async (ctx, next) => {
@@ -26,15 +28,15 @@ export function registerSubmitHandler(bot: Bot) {
     const submitPermission = getSubmitPermission();
     if (submitPermission === "admin") {
       await adminOnly(ctx, async () => {
-        await processSubmission(ctx);
+        await processSubmission(ctx, bot);
       });
     } else {
-      await processSubmission(ctx);
+      await processSubmission(ctx, bot);
     }
   });
 }
 
-async function processSubmission(ctx: any) {
+async function processSubmission(ctx: any, bot: Bot) {
   // Gather additional user details for a more descriptive submission record.
   const submissionData = {
     id: Date.now().toString(),
@@ -56,4 +58,6 @@ async function processSubmission(ctx: any) {
     const position = addToQueue(submissionData);
     await ctx.reply(`Your submission has been recorded. Current pending queue position: ${position}`);
   }
+
+  attemptAutoPull(bot).catch(err => logger.error("Error triggering auto-pull: " + err));
 }
